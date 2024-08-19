@@ -824,6 +824,10 @@ cdef class _Timestamp(ABCTimestamp):
         -------
         str
 
+        See Also
+        --------
+        Timestamp.day_name : Return the day name of the Timestamp with specified locale.
+
         Examples
         --------
         >>> ts = pd.Timestamp('2020-03-14T15:32:52.192548651')
@@ -917,6 +921,11 @@ cdef class _Timestamp(ABCTimestamp):
         Returns
         -------
         int
+
+        See Also
+        --------
+        Timestamp.is_quarter_end : Check if date is last day of the quarter.
+        Timestamp.is_quarter_start : Check if the date is the first day of the quarter.
 
         Examples
         --------
