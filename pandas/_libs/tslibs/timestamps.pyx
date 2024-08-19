@@ -1415,6 +1415,14 @@ class Timestamp(_Timestamp):
     --------
     Timedelta : Represents a duration, the difference between two dates or times.
     datetime.datetime : Python datetime.datetime object.
+    Timestamp.month : Returns the month value of the given Timestamp object.
+        Represented as an int.
+    Timestamp.minute : Returns the minute value of the given Timestamp object.
+        Represented as an int.
+    Timestamp.second : Returns the second value of the given Timestamp object.
+        Represented as an int.
+    Timestamp.nanosecond : Returns the nanosecond value of the given Timestamp object.
+        Represented as an int.
 
     Notes
     -----
