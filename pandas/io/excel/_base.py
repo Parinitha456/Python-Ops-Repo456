@@ -1213,6 +1213,7 @@ class ExcelWriter(Generic[_WorkbookT]):
         startrow: int = 0,
         startcol: int = 0,
         freeze_panes: tuple[int, int] | None = None,
+        notes: DataFrame | None = None,
     ) -> None:
         """
         Write given formatted cells into Excel an excel sheet
@@ -1221,6 +1222,8 @@ class ExcelWriter(Generic[_WorkbookT]):
         ----------
         cells : generator
             cell of formatted data to save to Excel sheet
+        notes: DataFrame
+            DataFrame containing notes to be written to the Excel sheet
         sheet_name : str, default None
             Name of Excel sheet, if None, then use self.cur_sheet
         startrow : upper left cell row to dump data frame
