@@ -2311,7 +2311,7 @@ class ArrowExtensionArray(
             for chunk in self._pa_array.iterchunks()
         ]
 
-    def _convert_bool_result(self, result):
+    def _convert_bool_result(self, result, na=lib.no_default, method_name=None):
         return type(self)(result)
 
     def _convert_int_result(self, result):
@@ -2323,7 +2323,12 @@ class ArrowExtensionArray(
         return type(self)(pc.count_substring_regex(self._pa_array, pat))
 
     def _str_contains(
-        self, pat, case: bool = True, flags: int = 0, na=None, regex: bool = True
+        self,
+        pat,
+        case: bool = True,
+        flags: int = 0,
+        na=lib.no_default,
+        regex: bool = True,
     ) -> Self:
         if flags:
             raise NotImplementedError(f"contains not implemented with {flags=}")
@@ -2333,7 +2338,7 @@ class ArrowExtensionArray(
         else:
             pa_contains = pc.match_substring
         result = pa_contains(self._pa_array, pat, ignore_case=not case)
-        if not isna(na):
+        if na is not lib.no_default and not isna(na):
             result = result.fill_null(na)
         return type(self)(result)
 
@@ -2375,14 +2380,22 @@ class ArrowExtensionArray(
         return type(self)(pc.binary_repeat(self._pa_array, repeats))
 
     def _str_match(
-        self, pat: str, case: bool = True, flags: int = 0, na: Scalar | None = None
+        self,
+        pat: str,
+        case: bool = True,
+        flags: int = 0,
+        na: Scalar | lib.NoDefault = lib.no_default,
     ) -> Self:
         if not pat.startswith("^"):
             pat = f"^{pat}"
         return self._str_contains(pat, case, flags, na, regex=True)
 
     def _str_fullmatch(
-        self, pat, case: bool = True, flags: int = 0, na: Scalar | None = None
+        self,
+        pat,
+        case: bool = True,
+        flags: int = 0,
+        na: Scalar | lib.NoDefault = lib.no_default,
     ) -> Self:
         if not pat.endswith("$") or pat.endswith("\\$"):
             pat = f"{pat}$"

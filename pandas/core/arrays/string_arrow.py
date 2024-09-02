@@ -223,11 +223,27 @@ class ArrowStringArray(ObjectStringArrayMixin, ArrowExtensionArray, BaseStringAr
             raise TypeError("Scalar must be NA or str")
         return super().insert(loc, item)
 
-    def _convert_bool_result(self, values, na=None):
+    def _convert_bool_result(self, values, na=lib.no_default, method_name=None):
         if self.dtype.na_value is np.nan:
-            if not isna(na):
+            na_value: bool | lib.NoDefault
+            if na is lib.no_default:
+                na_value = False
+            elif isna(na):
+                # NaN propagates as False
+                values = values.fill_null(False)
+                na_value = lib.no_default
+            else:
+                if not isinstance(na, bool):
+                    # GH#59561
+                    warnings.warn(
+                        f"Allowing a non-bool 'na' in obj.str.{method_name} is "
+                        "deprecated and will raise in a future version.",
+                        FutureWarning,
+                        stacklevel=find_stack_level(),
+                    )
                 values = values.fill_null(bool(na))
-            return ArrowExtensionArray(values).to_numpy(na_value=np.nan)
+                na_value = lib.no_default
+            return ArrowExtensionArray(values).to_numpy(na_value=na_value)
         return BooleanDtype().__from_arrow__(values)
 
     def _maybe_convert_setitem_value(self, value):
@@ -286,7 +302,12 @@ class ArrowStringArray(ObjectStringArrayMixin, ArrowExtensionArray, BaseStringAr
     _str_endswith = ArrowStringArrayMixin._str_endswith
 
     def _str_contains(
-        self, pat, case: bool = True, flags: int = 0, na=np.nan, regex: bool = True
+        self,
+        pat,
+        case: bool = True,
+        flags: int = 0,
+        na=lib.no_default,
+        regex: bool = True,
     ):
         if flags:
             if get_option("mode.performance_warnings"):
@@ -297,8 +318,12 @@ class ArrowStringArray(ObjectStringArrayMixin, ArrowExtensionArray, BaseStringAr
             result = pc.match_substring_regex(self._pa_array, pat, ignore_case=not case)
         else:
             result = pc.match_substring(self._pa_array, pat, ignore_case=not case)
-        result = self._convert_bool_result(result, na=na)
-        if not isna(na):
+        result = self._convert_bool_result(result, na=na, method_name="contains")
+        if (
+            self.dtype.na_value is libmissing.NA
+            and na is not lib.no_default
+            and not isna(na)
+        ):
             if not isinstance(na, bool):
                 # GH#59561
                 warnings.warn(
@@ -333,14 +358,22 @@ class ArrowStringArray(ObjectStringArrayMixin, ArrowExtensionArray, BaseStringAr
             return type(self)(pc.binary_repeat(self._pa_array, repeats))
 
     def _str_match(
-        self, pat: str, case: bool = True, flags: int = 0, na: Scalar | None = None
+        self,
+        pat: str,
+        case: bool = True,
+        flags: int = 0,
+        na: Scalar | lib.NoDefault = lib.no_default,
     ):
         if not pat.startswith("^"):
             pat = f"^{pat}"
         return self._str_contains(pat, case, flags, na, regex=True)
 
     def _str_fullmatch(
-        self, pat, case: bool = True, flags: int = 0, na: Scalar | None = None
+        self,
+        pat,
+        case: bool = True,
+        flags: int = 0,
+        na: Scalar | lib.NoDefault = lib.no_default,
     ):
         if not pat.endswith("$") or pat.endswith("\\$"):
             pat = f"{pat}$"

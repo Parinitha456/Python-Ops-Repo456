@@ -7,6 +7,10 @@ from typing import (
 
 import numpy as np
 
+from pandas._libs import (
+    lib,
+    missing as libmissing,
+)
 from pandas.compat import pa_version_under10p1
 
 from pandas.core.dtypes.missing import isna
@@ -23,14 +27,17 @@ if TYPE_CHECKING:
         Self,
     )
 
+    from pandas.core.dtypes.dtypes import ExtensionDtype
+
 
 class ArrowStringArrayMixin:
     _pa_array: Sized
+    dtype: ExtensionDtype
 
     def __init__(self, *args, **kwargs) -> None:
         raise NotImplementedError
 
-    def _convert_bool_result(self, result):
+    def _convert_bool_result(self, result, na=lib.no_default, method_name=None):
         # Convert a bool-dtype result to the appropriate result type
         raise NotImplementedError
 
@@ -105,7 +112,9 @@ class ArrowStringArrayMixin:
         result = pc.if_else(ends_with, removed, self._pa_array)
         return type(self)(result)
 
-    def _str_startswith(self, pat: str | tuple[str, ...], na: Scalar | None = None):
+    def _str_startswith(
+        self, pat: str | tuple[str, ...], na: Scalar | lib.NoDefault = lib.no_default
+    ):
         if isinstance(pat, str):
             result = pc.starts_with(self._pa_array, pattern=pat)
         else:
@@ -118,11 +127,17 @@ class ArrowStringArrayMixin:
 
                 for p in pat[1:]:
                     result = pc.or_(result, pc.starts_with(self._pa_array, pattern=p))
-        if not isna(na):  # pyright: ignore [reportGeneralTypeIssues]
+        if (
+            self.dtype.na_value is libmissing.NA
+            and na is not lib.no_default
+            and not isna(na)
+        ):  # pyright: ignore [reportGeneralTypeIssues]
             result = result.fill_null(na)
-        return self._convert_bool_result(result)
+        return self._convert_bool_result(result, na=na, method_name="startswith")
 
-    def _str_endswith(self, pat: str | tuple[str, ...], na: Scalar | None = None):
+    def _str_endswith(
+        self, pat: str | tuple[str, ...], na: Scalar | lib.NoDefault = lib.no_default
+    ):
         if isinstance(pat, str):
             result = pc.ends_with(self._pa_array, pattern=pat)
         else:
@@ -135,6 +150,10 @@ class ArrowStringArrayMixin:
 
                 for p in pat[1:]:
                     result = pc.or_(result, pc.ends_with(self._pa_array, pattern=p))
-        if not isna(na):  # pyright: ignore [reportGeneralTypeIssues]
+        if (
+            self.dtype.na_value is libmissing.NA
+            and na is not lib.no_default
+            and not isna(na)
+        ):  # pyright: ignore [reportGeneralTypeIssues]
             result = result.fill_null(na)
-        return self._convert_bool_result(result)
+        return self._convert_bool_result(result, na=na, method_name="endswith")
