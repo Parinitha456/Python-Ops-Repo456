@@ -1189,6 +1189,11 @@ cdef class _Timedelta(timedelta):
         """
         Total seconds in the duration.
 
+        See Also
+        --------
+        Timedelta.seconds : Returns the seconds component of the timedelta.
+        Timedelta.microseconds : Returns the microseconds component of the timedelta.
+
         Examples
         --------
         >>> td = pd.Timedelta('1min')
@@ -1403,6 +1408,14 @@ cdef class _Timedelta(timedelta):
         """
         Return a numpy.timedelta64 object with 'ns' precision.
 
+        Returns
+        -------
+        numpy.timedelta64
+
+        See Also
+        --------
+        Timedelta.to_numpy : Alias method.
+
         Examples
         --------
         >>> td = pd.Timedelta('3D')
@@ -1455,6 +1468,10 @@ cdef class _Timedelta(timedelta):
         ----------
         dtype : str or dtype
             The dtype to view the underlying data as.
+
+        See Also
+        --------
+        Timedelta.asm8 : Return a numpy timedelta64 array scalar view.
 
         Examples
         --------
