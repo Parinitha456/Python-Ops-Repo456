@@ -733,7 +733,9 @@ cpdef ndarray[object] ensure_string_array(
     convert_na_value : bool, default True
         If False, existing na values will be used unchanged in the new array.
     copy : bool, default True
-        Whether to ensure that a new array is returned.
+        Whether to ensure that a new array is returned. When True, a new array
+        is always returned. When False, a new array is only returned when needed
+        to avoid mutating the input array.
     skipna : bool, default True
         Whether or not to coerce nulls to their stringified form
         (e.g. if False, NaN becomes 'nan').
@@ -750,23 +752,30 @@ cpdef ndarray[object] ensure_string_array(
 
     if hasattr(arr, "to_numpy"):
 
-        if hasattr(arr, "dtype") and arr.dtype.kind in "mM":
+        if (
+            hasattr(arr, "dtype")
+            and arr.dtype.kind in "mM"
+            and not hasattr(arr, "_pa_array")
+        ):
             # dtype check to exclude DataFrame
             # GH#41409 TODO: not a great place for this
             out = arr.astype(str).astype(object)
             out[arr.isna()] = na_value
             return out
-        arr = arr.to_numpy(dtype=object)
     elif not util.is_array(arr):
         arr = np.array(arr, dtype="object")
 
     result = np.asarray(arr, dtype="object")
 
-    if copy and (result is arr or np.shares_memory(arr, result)):
-        # GH#54654
-        result = result.copy()
-    elif not copy and result is arr:
-        already_copied = False
+    if result is arr or np.may_share_memory(arr, result):
+        # if np.asarray(..) did not make a copy of the input arr, we still need
+        #  to do that to avoid mutating the input array
+        # GH#54654: share_memory check is needed for rare cases where np.asarray
+        #  returns a new object without making a copy of the actual data
+        if copy:
+            result = result.copy()
+        else:
+            already_copied = False
     elif not copy and not result.flags.writeable:
         # Weird edge case where result is a view
         already_copied = False
@@ -2703,13 +2712,17 @@ def maybe_convert_objects(ndarray[object] objects,
             from pandas.core.arrays.string_ import StringDtype
 
             dtype = StringDtype()
-            return dtype.construct_array_type()._from_sequence(objects, dtype=dtype)
+            return dtype.construct_array_type()._from_sequence(
+                objects, dtype=dtype, copy=True
+            )
 
         elif using_string_dtype() and is_string_array(objects, skipna=True):
             from pandas.core.arrays.string_ import StringDtype
 
             dtype = StringDtype(na_value=np.nan)
-            return dtype.construct_array_type()._from_sequence(objects, dtype=dtype)
+            return dtype.construct_array_type()._from_sequence(
+                objects, dtype=dtype, copy=True
+            )
 
         seen.object_ = True
     elif seen.interval_:
