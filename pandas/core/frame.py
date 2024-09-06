@@ -7830,6 +7830,10 @@ class DataFrame(NDFrame, OpsMixin):
 
         with np.errstate(all="ignore"):
             new_data = self._dispatch_frame_op(other, op, axis=axis)
+
+        if not getattr(self, "attrs", None) and getattr(other, "attrs", None):
+            self.attrs = other.attrs
+
         return self._construct_result(new_data)
 
     _logical_method = _arith_method
@@ -8184,6 +8188,9 @@ class DataFrame(NDFrame, OpsMixin):
                     self = self.fillna(fill_value)
 
                 new_data = self._dispatch_frame_op(other, op)
+
+        if not getattr(self, "attrs", None) and getattr(other, "attrs", None):
+            self.attrs = other.attrs
 
         return self._construct_result(new_data)
 
