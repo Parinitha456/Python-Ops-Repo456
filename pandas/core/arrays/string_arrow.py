@@ -56,6 +56,7 @@ if TYPE_CHECKING:
         ArrayLike,
         AxisInt,
         Dtype,
+        NpDtype,
         Scalar,
         Self,
         npt,
@@ -429,12 +430,22 @@ class ArrowStringArray(ObjectStringArrayMixin, ArrowExtensionArray, BaseStringAr
             return super()._str_find(sub, start, end)
         return self._convert_int_result(result)
 
-    def _str_get_dummies(self, sep: str = "|"):
-        dummies_pa, labels = ArrowExtensionArray(self._pa_array)._str_get_dummies(sep)
+    def _str_get_dummies(self, sep: str = "|", dtype: NpDtype | None = None):
+        if dtype is None:
+            dtype = np.int64
+        dummies_pa, labels = ArrowExtensionArray(self._pa_array)._str_get_dummies(
+            sep, dtype
+        )
         if len(labels) == 0:
-            return np.empty(shape=(0, 0), dtype=np.int64), labels
+            return np.empty(shape=(0, 0), dtype=dtype), labels
         dummies = np.vstack(dummies_pa.to_numpy())
-        return dummies.astype(np.int64, copy=False), labels
+        _dtype = pandas_dtype(dtype)
+        dummy_dtype: NpDtype
+        if isinstance(_dtype, np.dtype):
+            dummy_dtype = _dtype
+        else:
+            dummy_dtype = np.bool_
+        return dummies.astype(dummy_dtype, copy=False), labels
 
     def _convert_int_result(self, result):
         if self.dtype.na_value is np.nan:
