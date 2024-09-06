@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 import collections
+import collections.abc
 from copy import deepcopy
 import datetime as dt
 from functools import partial
@@ -4131,7 +4132,12 @@ class NDFrame(PandasObject, indexing.IndexingMixin):
             index = self.index
 
         if isinstance(index, MultiIndex):
-            loc, new_index = index._get_loc_level(key, level=0)
+            level = range(len(key)) if isinstance(key, collections.abc.Sequence) else 0
+            loc, new_index = index.get_loc_level(
+                key,
+                level=level,
+                drop_level=drop_level
+            )
             if not drop_level:
                 if lib.is_integer(loc):
                     # Slice index must be an integer or None
