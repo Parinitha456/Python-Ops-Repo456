@@ -28,6 +28,7 @@ from pandas.core.dtypes.common import (
     is_string_or_object_np_dtype,
 )
 from pandas.core.dtypes.dtypes import (
+    ArrowDtype,
     CategoricalDtype,
     DatetimeTZDtype,
     ExtensionDtype,
@@ -206,7 +207,10 @@ def _isna(obj):
     elif isinstance(obj, ABCSeries):
         result = _isna_array(obj._values)
         # box
-        result = obj._constructor(result, index=obj.index, name=obj.name, copy=False)
+        new_dtype = "bool[pyarrow]" if isinstance(obj.dtype, ArrowDtype) else None
+        result = obj._constructor(
+            result, index=obj.index, name=obj.name, copy=False, dtype=new_dtype
+        )
         return result
     elif isinstance(obj, ABCDataFrame):
         return obj.isna()
