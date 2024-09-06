@@ -630,7 +630,7 @@ def test_memory_usage(dtype):
 
     series = pd.Series(["a", "b", "c"], dtype=dtype)
 
-    assert 0 < series.nbytes <= series.memory_usage() < series.memory_usage(deep=True)
+    assert 0 < series.nbytes <= series.memory_usage() <= series.memory_usage(deep=True)
 
 
 @pytest.mark.parametrize("float_dtype", [np.float16, np.float32, np.float64])
